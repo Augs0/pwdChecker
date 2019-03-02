@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Password checker</title>
+
+<style>
+* {
+ box-sizing: border-box;
+}
+
+h1, h2{
+    text-align:center;
+}
+
+body{
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height:100vh;
+    background:
+    linear-gradient(5deg, rgba(201, 25, 255, 0.39) 0%, hsla(340, 100%, 55%, 0) 70%),
+    linear-gradient(135deg, rgba(231, 232, 235, 0.63) 10%, hsla(225, 95%, 50%, 0) 80%);
+}
+
+#showMenu{
+    writing-mode:vertical-lr;
+    padding:5px;
+    width:40px;
+    height:240px;
+    background-color:transparent;
+    color:black;
+    border:black solid 2px;
+    border-radius:3px;
+    float:right;
+}
+
+#showMenu:hover{
+    cursor:pointer;
+}
+
+
+.tipsContent{
+    padding: 20px;
+    max-width: 400px;
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 0 0 10px rgba(0,0,0,0.1);
+    border-radius:5px;
+    visibility:hidden; 
+    float:right;
+    transition-timing-function:ease-in-out;
+}
+
+.container{
+    position:absolute;
+    top:50%;
+    right:50%;
+    transform: translate(50%,-50%);
+    max-width:200px;
+}
+
+#userInput{
+    padding:5px;
+    width:100%;
+}
+
+#strength{
+    position:relative;
+    width:100%;
+    background-color:white;
+    height:25px;
+}
+
+#strength-filled{
+    width:0;
+    height:25px;
+}
+
+#advice{
+    text-align:center;
+}
+
+.show{
+    visibility:visible;
+}
+
+.altControls{
+  color: black; 
+  padding: 10px 24px; 
+  width:40%;
+  margin-top:20%;
+  margin-left:40%
+}
+
+.btn{
+    cursor: pointer;
+    background-color:transparent;
+    width:20%;
+    border-radius:5px;
+    transition:1s;
+    margin-left:2%;
+}
+
+.btn:hover{
+    background-color:white;
+}
+
+.dark-mode{
+    background-color:black;
+    color:white;
+}
+
+.lightMode{
+    display:none;
+}
+</style>
+</head>
+<body>  
+    <!--
+        >check password contains certain characters
+        >return a level of strength based on characters included using a coloured progress bar
+        >offer a way to strengthen the pasword by adding random characters, numbers, or scramble it
+    -->
+    <h1>Password checker</h1>
+    <h2>Input a password below that you're thinking of using. We'll tell you how strong it is and offer some alternatives.</h2>
+    <button class="btn darkMode">Dark mode</button>
+    <button class="btn lightMode">Light mode</button>
+    <div id="showMenu">Tips on creating a password</div>
+    <div class="container">
+    <input type="text" id="userInput"/>  
+    <br>
+    <br>
+    <div id="strength">
+         <div id="strength-filled"></div>
+    </div>
+    <br>
+    <div id="advice"></div>
+    </div>
+    </div>
+    <div id="tipsMenu">
+            <div class="tipsContent">
+            <p>Some things to keep in mind before you create a password:</p>
+            <ul>
+            <li>Sites may ask for a minimum length for the password. It is often around 8 characters, which is replicated here</li>
+            <li>Certain characters may be banned. For example, here you can use spaces and parentheses, but elsewhere you may find these are not accepted</li>
+            <li>Avoid easily obtainable information or information that can be guessed. For example, do not use your name or birthday</li>
+            <li>Do not use the word 'password'!</li>
+            <li>Don't make the password so complicated that even you can't remember it</li>
+            </ul>    
+            </div>
+    </div>
+    <div class="altControls">
+        <button id="capitalize" class="btn">Capitalize first letter</button>
+        <button id="switch" class="btn">Switch front and back</button>
+        <button id="everyOther" class="btn">Capitalize every other letter</button>
+        <button id="randomNum" class="btn">Add a random number</button>
+    </div>
+    <script>
+        //global variables to use with functions
+        const userInput = document.getElementById('userInput');
+        const advice = document.getElementById('advice');
+        //regex for testing the input
+        const letters = /(?=[a-zA-Z])/g; //parentheses create a back reference allowing to check the same text more than once, ?= creates a positive lookahead which looks for pattern A where pattern Bs follows (here both patterns are the same)
+        const numbers = /(?=[0-9])/g;
+        const letNum = /(?=[a-zA-Z0-9])/g;
+        const specialChar = /(?=[\W])/g;
+        const pwdLength = userInput.value.length;
+        const strength = document.getElementById('strength');
+        const strengthFilled = document.getElementById('strength-filled');
+        const menuButton = document.getElementById('showMenu');
+        const menu = document.querySelector('.tipsContent');
+        const capitalizeBtn = document.getElementById('capitalize');
+        const switchBtn = document.getElementById('switch');
+        const everyOtherBtn = document.getElementById('everyOther');
+        const randomNumBtn = document.getElementById('randomNum');
+        const body = document.getElementsByTagName('BODY')[0];
+        const button = document.getElementsByTagName('BUTTON');
+        const darkModeBtn = document.querySelector('.darkMode');
+        const lightModeBtn = document.querySelector('.lightMode');
+
+
+        function weakResult(){
+            const percent = 100/3;
+            strengthFilled.style.width = `${percent}%`
+            strengthFilled.style.backgroundColor = "red";
+            strengthFilled.innerHTML = "Weak";
+        }
+
+        function medResult(){
+            const percent = 100/2;
+            strengthFilled.style.width = `${percent}%`
+            strengthFilled.style.backgroundColor = "yellow";
+            strengthFilled.innerHTML = "Medium";
+
+        }
+
+        function goodResult(){
+            strengthFilled.style.width = "100%"
+            strengthFilled.style.backgroundColor = "green";
+            strengthFilled.innerHTML = "Strong";
+
+        }
+
+        function clearBar(){
+            strengthFilled.style.width = "0%";
+            strengthFilled.innerHTML = "";
+
+        }
+
+        function showStrength(){
+            if(userInput.value.length >= 8){
+            if(letters.test(userInput.value) && !numbers.test(userInput.value) && !specialChar.test(userInput.value)){ //letters with no num or spec char
+                advice.innerHTML = "Try using some numbers or special characters";
+                weakResult();
+            } else if(letters.test(userInput.value) && numbers.test(userInput.value) && !specialChar.test(userInput.value)){ //letters with num but no spec char
+                advice.innerHTML = "Try using some special characters";
+                medResult();
+            } else if(!letters.test(userInput.value) && numbers.test(userInput.value) && !specialChar.test(userInput.value)){ //numbers with no letters or spec char
+                advice.innerHTML = "Try using letters and special characters";
+                weakResult();
+            } else if(!letters.test(userInput.value) && !numbers.test(userInput.value) && specialChar.test(userInput.value)){ //special char with no letters or numbers
+                advice.innerHTML = "Try using letters and numbers too";
+                weakResult();
+            }else if(!letters.test(userInput.value) && numbers.test(userInput.value) && specialChar.test(userInput.value)){ //numbers and spec char with no letters
+                advice.innerHTML = "Try adding some letters";
+                medResult();
+            }else if(letters.test(userInput.value) && !numbers.test(userInput.value) && specialChar.test(userInput.value)){ //letters and spec char with no numbers
+                advice.innerHTML = "Try adding some numbers";
+                medResult();
+            }else if(letNum.test(userInput.value) && specialChar.test(userInput.value)){//has letters, numbers and special characters
+                advice.innerHTML = "Looking good";
+                goodResult();
+            } else if(!letters.test(userInput.value) && !numbers.test(userInput.value) && !specialChar.test(userInput.value)){
+                advice.innerHTML = "Please use a password that is at least 8 characters long";
+                clearBar();
+            }
+        }else{
+            advice.innerHTML = "Please use a password that is at least 8 characters long";
+            clearBar();
+        }
+        };
+        
+        function showMenu(){
+            menu.classList.toggle ("show");
+        }
+
+        function capitalizePwd(){
+            userInput.value = userInput.value.charAt(0).toUpperCase() + userInput.value.slice(1);
+        }
+
+
+        function switchPwd(){
+            const firstHalf = userInput.value.slice(0,userInput.value.length / 2);
+            const secondHalf = userInput.value.slice(userInput.value.length / 2);
+            userInput.value = secondHalf + firstHalf;
+        }
+
+        // function altCapitalize(){
+        //     const splitUp = userInput.value.split('');
+        //     splitUp.forEach(function(letter, i){
+        //         if(i%2 == 0){
+        //             letter.toLowerCase();
+        //         } else{
+        //             letter.toUpperCase();
+        //         }
+        //     })
+        //     userInput.value = splitUp.join('');
+        //     }; 
+        function altCapitalize(){
+            userInput.value = userInput.value.split('').map((letter,i) => i % 2 ? letter.toLowerCase(): letter.toUpperCase()).join(''); //empty string in split() allows to pull out each character. check if index is even/odd and treat accordingly
+        };
+
+        function addRandomNum(){
+            random = Math.floor(Math.random() * 100); //math.random returns a number between 0 and 1, times this result by 100 to return numbers between 1 and 99, math.floor rounds down so no decimals
+            userInput.value = userInput.value + random;
+        }
+
+        function goDark(){
+            body.classList.add("dark-mode");
+            for (i = 0; i < button.length; i++) {
+                 button[i].style.backgroundColor = "black";
+                 button[i].style.color = "white";
+            }
+            menuButton.style.backgroundColor = "black";
+            menuButton.style.color = "white";
+            menu.style.backgroundColor = "black";
+            menu.style.color = "white";
+            darkModeBtn.style.display = "none";
+            lightModeBtn.style.display = "block";   
+        }
+
+        function goLight(){
+            body.classList.remove("dark-mode");
+            for (i = 0; i < button.length; i++) {
+                 button[i].style.backgroundColor = "transparent";
+                 button[i].style.color = "black";
+            }
+            menuButton.style.backgroundColor = "transparent";
+            menuButton.style.color = "black";
+            menu.style.backgroundColor = "white";
+            menu.style.color = "black";
+            lightModeBtn.style.display = "none";
+            darkModeBtn.style.display = "block";   
+        }
+
+        //event listeners
+        userInput.addEventListener('input', showStrength);
+        menuButton.addEventListener('click',showMenu);
+        capitalizeBtn.addEventListener('click', capitalizePwd);
+        switchBtn.addEventListener('click', switchPwd);
+        everyOtherBtn.addEventListener('click', altCapitalize);
+        randomNumBtn.addEventListener('click',addRandomNum);
+        darkModeBtn.addEventListener('click', goDark);
+        lightModeBtn.addEventListener('click',goLight);
+    </script>
+</body>
+</html>
